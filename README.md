@@ -7,7 +7,7 @@ Voila Call is developed by the team at VoilaCode Technologies, a dedicated group
 Getting Started
 This project is a starting point for a Flutter application that focuses on phone call management. It provides a foundation for integrating calling functionalities into a mobile app.
 
-Key Features
+Key Features....
 Call Log: View a list of recent calls with details such as contact name, time, and duration.
 Dial Pad: Use a virtual dial pad to make calls directly from the app.
 Call Status: Monitor ongoing call status, including active calls and call history.
