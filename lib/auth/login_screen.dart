@@ -5,7 +5,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:voila_call_dummy/auth/dashboard_screen.dart';
 import 'package:voila_call_dummy/auth/register_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
 

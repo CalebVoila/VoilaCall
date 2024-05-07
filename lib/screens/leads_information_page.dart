@@ -11,7 +11,7 @@ class _LeadsInformationPageState extends State<LeadsInformationPage> {
   int _coldLeadsCount = 0;
   int _openLeadsCount = 0;
   int _warmLeadsCount = 0;
-  int _totalCustomers = 0;
+  int _totalInteractions = 0;
 
   @override
   void initState() {
@@ -21,28 +21,20 @@ class _LeadsInformationPageState extends State<LeadsInformationPage> {
 
   Future<void> _fetchLeadsCount() async {
     try {
-      int hotLeads = await DatabaseHelper.getLeadCount('hot lead');
-      int coldLeads = await DatabaseHelper.getLeadCount('cold lead');
-      int openLeads = await DatabaseHelper.getLeadCount('open lead');
-      int warmLeads = await DatabaseHelper.getLeadCount('warm lead');
-      int totalCustomers = await DatabaseHelper.getTotalCustomersCount();
+      // Fetch lead counts for different types
+      _hotLeadsCount = await DatabaseHelper.getLeadCount('hot');
+      _coldLeadsCount = await DatabaseHelper.getLeadCount('cold');
+      _openLeadsCount = await DatabaseHelper.getLeadCount('open');
+      _warmLeadsCount = await DatabaseHelper.getLeadCount('warm');
 
-      print('Hot Leads: $hotLeads');
-      print('Cold Leads: $coldLeads');
-      print('Open Leads: $openLeads');
-      print('Warm Leads: $warmLeads');
-      print('Total Customers: $totalCustomers');
+      // Fetch total interactions count
+      _totalInteractions = await DatabaseHelper.getTotalInteractionsCount();
 
-      setState(() {
-        _hotLeadsCount = hotLeads;
-        _coldLeadsCount = coldLeads;
-        _openLeadsCount = openLeads;
-        _warmLeadsCount = warmLeads;
-        _totalCustomers = totalCustomers;
-      });
+      // Update the UI with the fetched counts
+      setState(() {});
     } catch (e) {
       print('Error fetching leads count: $e');
-      // Handle errors here, you can set default values or show an error message
+      // Handle errors here, set default values or show an error message
     }
   }
 
@@ -51,7 +43,6 @@ class _LeadsInformationPageState extends State<LeadsInformationPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Leads Information'),
-        automaticallyImplyLeading: false,
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -60,7 +51,7 @@ class _LeadsInformationPageState extends State<LeadsInformationPage> {
           _buildLeadTile('Cold Leads', _coldLeadsCount),
           _buildLeadTile('Open Leads', _openLeadsCount),
           _buildLeadTile('Warm Leads', _warmLeadsCount),
-          _buildLeadTile('Total Customers', _totalCustomers),
+          _buildLeadTile('Total Interactions', _totalInteractions),
         ],
       ),
     );

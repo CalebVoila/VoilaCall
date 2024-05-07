@@ -3,9 +3,10 @@ import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:call_log/call_log.dart';
 import 'package:voila_call_dummy/widgets/custom_dialpad.dart';
 import 'package:voila_call_dummy/screens/voila_call_screen.dart';
-import 'package:voila_call_dummy/screens/contact_details_screen.dart'; // Import the ContactDetailsScreen
-import 'package:voila_call_dummy/services/call_service.dart'; // Assuming this service includes call-related functionalities
+import 'package:voila_call_dummy/screens/contact_details_screen.dart';
 import 'package:voila_call_dummy/auth/dashboard_screen.dart';
+import 'package:voila_call_dummy/services/call_service.dart'; // Assuming this service includes call-related functionalities
+
 class DialpadScreen extends StatefulWidget {
   final Function(int) setActiveTabIndex;
 
@@ -38,7 +39,7 @@ class _DialpadScreenState extends State<DialpadScreen> {
       onWillPop: () async {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => DashboardScreen(username : '')),
+          MaterialPageRoute(builder: (context) => DashboardScreen(username: '')),
         );
         return false; // Return false to prevent default back button behavior
       },
@@ -98,7 +99,6 @@ class _DialpadScreenState extends State<DialpadScreen> {
                         ],
                       ),
                       onTap: () {
-                        // Navigate to ContactDetailsScreen when tapped
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -123,13 +123,11 @@ class _DialpadScreenState extends State<DialpadScreen> {
     );
   }
 
-  String? _formatTimestamp(int? timestamp) {
-    if (timestamp == null) return null;
+  String _formatTimestamp(int? timestamp) {
+    if (timestamp == null) return '';
     final DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
-    final String hours = '${dateTime.hour}'.padLeft(2, '0');
-    final String minutes = '${dateTime.minute}'.padLeft(2, '0');
-    final String seconds = '${dateTime.second}'.padLeft(2, '0');
-    return '$hours:$minutes:$seconds';
+    final String formattedTime = '${dateTime.hour}:${dateTime.minute}:${dateTime.second}';
+    return formattedTime;
   }
 
   void _handleDigitPressed(String digit) {
@@ -150,7 +148,7 @@ class _DialpadScreenState extends State<DialpadScreen> {
     String phoneNumber = _enteredDigits.join();
 
     bool? res = await FlutterPhoneDirectCaller.callNumber(phoneNumber);
-    if (!res!) {
+    if (res != true) {
       // Handle error if call couldn't be initiated
       print('Error making call');
       return;
@@ -167,7 +165,7 @@ class _DialpadScreenState extends State<DialpadScreen> {
 
   void _makeCallToContact(String phoneNumber) async {
     bool? res = await FlutterPhoneDirectCaller.callNumber(phoneNumber);
-    if (!res!) {
+    if (res != true) {
       // Handle error if call couldn't be initiated
       print('Error making call');
       return;

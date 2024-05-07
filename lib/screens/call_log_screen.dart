@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:call_log/call_log.dart';
 import 'package:flutter/services.dart';
-import 'contact_details_screen.dart'; // Import the ContactDetailsScreen
-import 'voila_call_screen.dart'; // Import the VoilaCallScreen
+import 'contact_details_screen.dart';
+import 'voila_call_screen.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 
 class CallLogScreen extends StatefulWidget {
@@ -13,7 +13,7 @@ class CallLogScreen extends StatefulWidget {
 class _CallLogScreenState extends State<CallLogScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
-  Stream<List<CallLogEntry>>? _filteredCallLogsStream;
+  late Stream<List<CallLogEntry>> _filteredCallLogsStream;
 
   @override
   void initState() {
@@ -24,7 +24,10 @@ class _CallLogScreenState extends State<CallLogScreen> {
   Stream<List<CallLogEntry>> _fetchFilteredCallLogsStream(DateTime startDate, DateTime endDate) async* {
     while (true) {
       await Future.delayed(Duration(seconds: 1)); // Adjust the delay time as needed
-      Iterable<CallLogEntry> callLogs = await CallLog.get();
+      Iterable<CallLogEntry> callLogs = await CallLog.query(
+        dateFrom: startDate.millisecondsSinceEpoch,
+        dateTo: endDate.add(Duration(days: 1)).millisecondsSinceEpoch,
+      );
       yield _filterCallLogs(callLogs, startDate, endDate);
     }
   }
@@ -40,7 +43,6 @@ class _CallLogScreenState extends State<CallLogScreen> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        // Minimize the app instead of popping when back button is pressed
         SystemNavigator.pop();
         return false;
       },
@@ -106,7 +108,6 @@ class _CallLogScreenState extends State<CallLogScreen> {
                         ],
                       ),
                       onTap: () {
-                        // Navigate to ContactDetailsScreen when tapped
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -153,56 +154,39 @@ class _CallLogScreenState extends State<CallLogScreen> {
   }
 
   String _getMonth(int month) {
-    switch (month) {
-      case 1:
-        return 'Jan';
-      case 2:
-        return 'Feb';
-      case 3:
-        return 'Mar';
-      case 4:
-        return 'Apr';
-      case 5:
-        return 'May';
-      case 6:
-        return 'Jun';
-      case 7:
-        return 'Jul';
-      case 8:
-        return 'Aug';
-      case 9:
-        return 'Sep';
-      case 10:
-        return 'Oct';
-      case 11:
-        return 'Nov';
-      case 12:
-        return 'Dec';
-      default:
-        return '';
-    }
+    final months = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return months[month];
   }
 
   void _makeCall(String phoneNumber) async {
     try {
       await FlutterPhoneDirectCaller.callNumber(phoneNumber);
-      // After the call ends, navigate to the status of call page
+
+      // Obtain the call duration from your application logic
+      int callDurationSeconds = 0; // Replace 0 with the actual call duration in seconds
+
+      // Navigate to VoilaCallScreen after call is made, passing phoneNumber and callDuration
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => VoilaCallScreen(phoneNumber: phoneNumber, callDuration: 0),
+          builder: (context) => VoilaCallScreen(
+            phoneNumber: phoneNumber,
+            callDuration: callDurationSeconds,
+          ),
         ),
       );
     } catch (e) {
-      // Handle error if call cannot be launched
-      print('Error launching call: $e');
+      print('Error making call: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not make a call'),
+          content: Text('Failed to make call'),
         ),
       );
     }
   }
+
 
   Future<void> _showFilterDateRangePicker() async {
     final DateTime? pickedStartDate = await showDatePicker(
@@ -228,35 +212,16 @@ class _CallLogScreenState extends State<CallLogScreen> {
     }
   }
 
-  void _showCallStatus(CallLogEntry call) {
-    // Implement logic to show call status
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Call Status'),
-          content: Text('Status: ${call.callType}'), // You can customize this message as needed
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _openCallStatusForm(BuildContext context, CallLogEntry call) {
-    // Navigate to VoilaCallScreen to fill out call status form
+    // Pass a default value for callDuration (you can obtain the actual call duration)
+    int callDurationSeconds = 0; // Provide the actual call duration in seconds here
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => VoilaCallScreen(
           phoneNumber: call.number ?? '',
-          callDuration: 0, // You can pass the call duration here if available
+          callDuration: callDurationSeconds,
         ),
       ),
     );
