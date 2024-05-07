@@ -1,14 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:voila_call_dummy/widgets/database_helper.dart';
 import 'package:call_log/call_log.dart';
 
 class VoilaCallScreen extends StatefulWidget {
   final String phoneNumber;
-  final int callDuration;
 
   VoilaCallScreen({
-    required this.phoneNumber,
-    required this.callDuration,
+    required this.phoneNumber, required int callDuration,
   });
 
   @override
@@ -19,24 +18,39 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
   String selectedLead = 'not responding';
   String selectedCallType = 'incoming';
   String selectedCallTag = 'unanswered';
+  String selectedStatus = 'incoming';
   TextEditingController nameController = TextEditingController();
   TextEditingController callerNameController = TextEditingController();
   TextEditingController callerNumberController = TextEditingController();
-  TextEditingController callDurationController = TextEditingController();
+  TextEditingController interactionDateController = TextEditingController(); // New controller for interaction date
   int duration = 0;
 
   @override
   void initState() {
     super.initState();
     fetchCallerInfo(widget.phoneNumber);
-    fetchCallDuration();
+    // Start updating duration immediately and every second
+    Timer.periodic(Duration(seconds: 1), (Timer t) => fetchCallDuration());
+    // Fetch and display interaction date
+    setInteractionDate();
+  }
+
+  void setInteractionDate() {
+    // Get current date and time
+    DateTime now = DateTime.now();
+    // Format it as desired
+    String formattedDate = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    // Set it to the controller
+    interactionDateController.text = formattedDate;
   }
 
   Future<void> fetchCallerInfo(String phoneNumber) async {
     try {
       final callerInfo = await fetchCallerInfoFromAPI(phoneNumber);
-      callerNameController.text = callerInfo['name'] ?? '';
-      callerNumberController.text = callerInfo['number'] ?? '';
+      setState(() {
+        callerNameController.text = callerInfo['name'] ?? '';
+        callerNumberController.text = callerInfo['number'] ?? '';
+      });
     } catch (e) {
       print('Error fetching caller info: $e');
       callerNameController.text = 'Unknown';
@@ -51,15 +65,34 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
         dateTo: DateTime.now().millisecondsSinceEpoch,
       );
       if (callLogs.isNotEmpty) {
-        CallLogEntry latestCall = callLogs.first;
-        duration = latestCall.duration ?? 0;
-        callDurationController.text = '$duration seconds';
+        CallLogEntry latestCall = callLogs.firstWhere((log) =>
+        log.callType == CallType.incoming || log.callType == CallType.outgoing);
+        setState(() {
+          duration = latestCall.duration ?? 0;
+        });
       } else {
-        callDurationController.text = '0 seconds';
+        setState(() {
+          duration = 0;
+        });
       }
     } catch (e) {
       print('Error fetching call duration: $e');
-      callDurationController.text = '0 seconds';
+    }
+  }
+
+  Future<void> fetchLastDialedNumber() async {
+    try {
+      Iterable<CallLogEntry> callLogs = await CallLog.query(
+        dateFrom: DateTime.now().subtract(Duration(days: 1)).millisecondsSinceEpoch,
+        dateTo: DateTime.now().millisecondsSinceEpoch,
+      );
+      if (callLogs.isNotEmpty) {
+        CallLogEntry lastDialedCall =
+        callLogs.firstWhere((log) => log.callType == CallType.outgoing);
+        callerNumberController.text = lastDialedCall.number ?? '';
+      }
+    } catch (e) {
+      print('Error fetching last dialed number: $e');
     }
   }
 
@@ -95,58 +128,62 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
             TextField(
               controller: callerNumberController,
               decoration: InputDecoration(
-                labelText: 'Caller Number',
+                labelText: 'Number',
                 hintText: widget.phoneNumber,
               ),
+              readOnly: true, // Make it not editable
             ),
             SizedBox(height: 20),
             TextField(
-              controller: callDurationController,
+              controller: TextEditingController(text: '$duration seconds'),
               decoration: InputDecoration(
                 labelText: 'Call Duration',
-                hintText: '$duration seconds',
               ),
+              readOnly: true, // Make it not editable
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: interactionDateController, // Use the controller for interaction date
+              decoration: InputDecoration(
+                labelText: 'Interaction Date',
+              ),
+              readOnly: true, // Make it not editable
             ),
             SizedBox(height: 20),
             Text('Select Lead:', style: TextStyle(fontSize: 18)),
             Column(
               children: [
-                RadioListTile(
-                  title: Text('Not Responding'),
-                  value: 'not responding',
-                  groupValue: selectedLead,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedLead = value.toString();
-                    });
-                  },
-                ),
-                // Add more RadioListTile widgets for other lead types
+                // RadioListTile Widgets for selecting lead
               ],
             ),
             SizedBox(height: 20),
             Text('Select Call Type:', style: TextStyle(fontSize: 18)),
             Column(
               children: [
-                RadioListTile(
-                  title: Text('Incoming'),
-                  value: 'incoming',
-                  groupValue: selectedCallType,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedCallType = value.toString();
-                    });
-                  },
-                ),
-                RadioListTile(
-                  title: Text('Outgoing'),
-                  value: 'outgoing',
-                  groupValue: selectedCallType,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedCallType = value.toString();
-                    });
-                  },
+                Row(
+                  children: [
+                    Radio<String>(
+                      value: 'incoming',
+                      groupValue: selectedCallType,
+                      onChanged: (String? value) {
+                        setState(() {
+                          selectedCallType = value!;
+                        });
+                      },
+                    ),
+                    Text('Incoming'),
+                    SizedBox(width: 20),
+                    Radio<String>(
+                      value: 'outgoing',
+                      groupValue: selectedCallType,
+                      onChanged: (String? value) {
+                        setState(() {
+                          selectedCallType = value!;
+                        });
+                      },
+                    ),
+                    Text('Outgoing'),
+                  ],
                 ),
               ],
             ),
@@ -154,25 +191,37 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
             Text('Select Call Tag:', style: TextStyle(fontSize: 18)),
             Column(
               children: [
-                RadioListTile(
-                  title: Text('Answered'),
-                  value: 'answered',
-                  groupValue: selectedCallTag,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedCallTag = value.toString();
-                    });
-                  },
-                ),
-                RadioListTile(
-                  title: Text('Unanswered'),
-                  value: 'unanswered',
-                  groupValue: selectedCallTag,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedCallTag = value.toString();
-                    });
-                  },
+                // RadioListTile Widgets for selecting call tag
+              ],
+            ),
+            SizedBox(height: 20),
+            Text('Select Call Status:', style: TextStyle(fontSize: 18)),
+            Column(
+              children: [
+                Row(
+                  children: [
+                    Radio<String>(
+                      value: 'incoming',
+                      groupValue: selectedStatus,
+                      onChanged: (String? value) {
+                        setState(() {
+                          selectedStatus = value!;
+                        });
+                      },
+                    ),
+                    Text('Incoming'),
+                    SizedBox(width: 20),
+                    Radio<String>(
+                      value: 'outgoing',
+                      groupValue: selectedStatus,
+                      onChanged: (String? value) {
+                        setState(() {
+                          selectedStatus = value!;
+                        });
+                      },
+                    ),
+                    Text('Outgoing'),
+                  ],
                 ),
               ],
             ),
@@ -184,16 +233,16 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
                 String callerNumber = callerNumberController.text.isNotEmpty
                     ? callerNumberController.text
                     : widget.phoneNumber;
-                String callDuration = callDurationController.text;
 
                 Map<String, dynamic> interaction = {
                   'client_slug': selectedLead,
                   'name': name,
                   'caller_name': callerName,
                   'phone': callerNumber,
-                  'interaction_date': DateTime.now().toString(),
+                  'interaction_date': interactionDateController.text, // Use interaction date from controller
                   'interaction_type': selectedCallType,
                   'interaction_tag': selectedCallTag,
+                  'status': selectedStatus,
                   'duration_hours': duration ~/ 3600,
                   'duration_minutes': (duration % 3600) ~/ 60,
                   'duration_seconds': duration % 60,
@@ -204,11 +253,11 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
                 nameController.clear();
                 callerNameController.clear();
                 callerNumberController.clear();
-                callDurationController.clear();
                 setState(() {
                   selectedLead = 'not responding';
                   selectedCallType = 'incoming';
                   selectedCallTag = 'unanswered';
+                  selectedStatus = 'incoming';
                 });
 
                 ScaffoldMessenger.of(context).showSnackBar(
