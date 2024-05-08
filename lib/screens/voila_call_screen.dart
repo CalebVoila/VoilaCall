@@ -5,7 +5,6 @@ import 'package:call_log/call_log.dart';
 
 class VoilaCallScreen extends StatefulWidget {
   final String phoneNumber;
-
   VoilaCallScreen({
     required this.phoneNumber,
     required int callDuration,
