@@ -7,7 +7,8 @@ class VoilaCallScreen extends StatefulWidget {
   final String phoneNumber;
 
   VoilaCallScreen({
-    required this.phoneNumber, required int callDuration,
+    required this.phoneNumber,
+    required int callDuration,
   });
 
   @override
@@ -39,7 +40,8 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
     // Get current date and time
     DateTime now = DateTime.now();
     // Format it as desired
-    String formattedDate = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    String formattedDate =
+        "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
     // Set it to the controller
     interactionDateController.text = formattedDate;
   }
@@ -153,7 +155,56 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
             Text('Select Lead:', style: TextStyle(fontSize: 18)),
             Column(
               children: [
-                // RadioListTile Widgets for selecting lead
+                RadioListTile<String>(
+                  title: Text('Hot Lead'),
+                  value: 'hot_lead',
+                  groupValue: selectedLead,
+                  onChanged: (value) {
+                    setState(() {
+                      selectedLead = value!;
+                    });
+                  },
+                ),
+                RadioListTile<String>(
+                  title: Text('Cold Lead'),
+                  value: 'cold_lead',
+                  groupValue: selectedLead,
+                  onChanged: (value) {
+                    setState(() {
+                      selectedLead = value!;
+                    });
+                  },
+                ),
+                RadioListTile<String>(
+                  title: Text('Warm Lead'),
+                  value: 'warm_lead',
+                  groupValue: selectedLead,
+                  onChanged: (value) {
+                    setState(() {
+                      selectedLead = value!;
+                    });
+                  },
+                ),
+                RadioListTile<String>(
+                  title: Text('Open Lead'),
+                  value: 'open_lead',
+                  groupValue: selectedLead,
+                  onChanged: (value) {
+                    setState(() {
+                      selectedLead = value!;
+                    });
+                  },
+                ),
+                RadioListTile<String>(
+                  title: Text('Customer'),
+                  value: 'customer',
+                  groupValue: selectedLead,
+                  onChanged: (value) {
+                    setState(() {
+                      selectedLead = value!;
+                    });
+                  },
+                ),
               ],
             ),
             SizedBox(height: 20),
@@ -239,7 +290,8 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
                   'name': name,
                   'caller_name': callerName,
                   'phone': callerNumber,
-                  'interaction_date': interactionDateController.text, // Use interaction date from controller
+                  'interaction_date':
+                  interactionDateController.text, // Use interaction date from controller
                   'interaction_type': selectedCallType,
                   'interaction_tag': selectedCallTag,
                   'status': selectedStatus,
