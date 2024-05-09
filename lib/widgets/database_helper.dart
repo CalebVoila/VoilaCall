@@ -1,7 +1,7 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:call_log/call_log.dart';
-import 'package:flutter/widgets.dart';
 
 class DatabaseHelper {
   static Database? _database;
@@ -17,8 +17,6 @@ class DatabaseHelper {
   }
 
   static Future<Database> initDatabase() async {
-    WidgetsFlutterBinding.ensureInitialized();
-
     final path = join(await getDatabasesPath(), 'combined_database.db');
 
     return openDatabase(
@@ -33,11 +31,9 @@ class DatabaseHelper {
             interaction_date TEXT,
             interaction_type TEXT,
             interaction_tag TEXT,
+            status TEXT,
             duration_seconds INTEGER,
             caller_name TEXT,
-            caller_phone TEXT,
-            status TEXT,
-            data TEXT,
             created_at TEXT,
             updated_at TEXT
           )''',
@@ -55,15 +51,20 @@ class DatabaseHelper {
   }
 
   static Future<void> insertInteraction(Map<String, dynamic> interaction) async {
-    final int hours = interaction['duration_hours'] ?? 0;
-    final int minutes = interaction['duration_minutes'] ?? 0;
     final int seconds = interaction['duration_seconds'] ?? 0;
 
-    final int totalDurationSeconds = hours * 3600 + minutes * 60 + seconds;
-
     final Map<String, dynamic> interactionWithSeconds = {
-      ...interaction,
-      'duration_seconds': totalDurationSeconds,
+      'client_slug': interaction['client_slug'],
+      'name': interaction['name'],
+      'phone': interaction['phone'],
+      'interaction_date': interaction['interaction_date'],
+      'interaction_type': interaction['interaction_type'],
+      'interaction_tag': interaction['interaction_tag'],
+      'status': interaction['status'],
+      'duration_seconds': seconds,
+      'caller_name': interaction['caller_name'],
+      'created_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
     };
 
     final Database db = await database;
@@ -87,20 +88,64 @@ class DatabaseHelper {
     return result.isNotEmpty ? result.first['count'] as int : 0;
   }
 
-  static Future<int> getCallDuration() async {
+  static fetchCallerInfoFromAPI(String phoneNumber) {}
+}
+
+class LeadsInformationPage extends StatefulWidget {
+  @override
+  _LeadsInformationPageState createState() => _LeadsInformationPageState();
+}
+
+class _LeadsInformationPageState extends State<LeadsInformationPage> {
+  int _hotLeadsCount = 0;
+  int _coldLeadsCount = 0;
+  int _openLeadsCount = 0;
+  int _warmLeadsCount = 0;
+  int _totalInteractions = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLeadsCount();
+  }
+
+  Future<void> _fetchLeadsCount() async {
     try {
-      Iterable<CallLogEntry> callLogs = await CallLog.query(
-        // Query call logs for a specific duration
-        dateFrom: DateTime.now().subtract(Duration(days: 30)).millisecondsSinceEpoch,
-      );
-      int totalDuration = 0;
-      for (var call in callLogs) {
-        totalDuration += call.duration ?? 0;
-      }
-      return totalDuration; // Return total duration in seconds
+      _hotLeadsCount = await DatabaseHelper.getLeadCount('hot');
+      _coldLeadsCount = await DatabaseHelper.getLeadCount('cold');
+      _openLeadsCount = await DatabaseHelper.getLeadCount('open');
+      _warmLeadsCount = await DatabaseHelper.getLeadCount('warm');
+      _totalInteractions = await DatabaseHelper.getTotalInteractionsCount();
+      setState(() {});
     } catch (e) {
-      print('Error fetching call duration: $e');
-      return 0;
+      print('Error fetching leads count: $e');
+      // Handle errors here
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Leads Information'),
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildLeadTile('Hot Leads', _hotLeadsCount),
+          _buildLeadTile('Cold Leads', _coldLeadsCount),
+          _buildLeadTile('Open Leads', _openLeadsCount),
+          _buildLeadTile('Warm Leads', _warmLeadsCount),
+          _buildLeadTile('Total Interactions', _totalInteractions),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeadTile(String title, int count) {
+    return Padding(
+      padding: EdgeInsets.all(16.0),
+      child: Text('$title: $count'),
+    );
   }
 }
