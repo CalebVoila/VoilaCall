@@ -7,7 +7,8 @@ class VoilaCallScreen extends StatefulWidget {
   final String phoneNumber;
 
   VoilaCallScreen({
-    required this.phoneNumber, required int callDuration,
+    required this.phoneNumber,
+    required int callDuration,
   });
 
   @override
@@ -18,7 +19,8 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
   String selectedLead = 'not responding';
   String selectedCallType = 'incoming';
   String selectedCallTag = 'unanswered';
-  String selectedStatus = 'incoming';
+  List<String> callLeads = ['not responding', 'open lead', 'cold lead', 'hot lead', 'warm lead', 'customer'];
+  String? selectedLeadValue;
   TextEditingController nameController = TextEditingController();
   TextEditingController callerNameController = TextEditingController();
   TextEditingController callerNumberController = TextEditingController();
@@ -28,11 +30,8 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
   @override
   void initState() {
     super.initState();
-    // Start updating call duration immediately and every second
     Timer.periodic(Duration(seconds: 1), (Timer t) => fetchCallDuration());
-    // Set interaction date
     setInteractionDate();
-    // Fetch caller information
     fetchCallerInfo(widget.phoneNumber);
   }
 
@@ -66,7 +65,13 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
       if (callLogs.isNotEmpty) {
         CallLogEntry latestCall = callLogs.firstWhere((log) =>
         log.callType == CallType.incoming || log.callType == CallType.outgoing);
+
+        String interactionType = latestCall.callType == CallType.incoming ? 'incoming' : 'outgoing';
+        String interactionTag = latestCall.duration != 0 ? 'answered' : 'unanswered';
+
         setState(() {
+          selectedCallType = interactionType;
+          selectedCallTag = interactionTag;
           duration = latestCall.duration ?? 0;
         });
       } else {
@@ -115,6 +120,25 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
               readOnly: true,
             ),
             SizedBox(height: 20),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Call Lead'),
+                SizedBox(height: 8),
+                for (String lead in callLeads)
+                  RadioListTile<String>(
+                    title: Text(lead),
+                    value: lead,
+                    groupValue: selectedLeadValue,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedLeadValue = value;
+                      });
+                    },
+                  ),
+              ],
+            ),
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
                 String name = nameController.text;
@@ -123,19 +147,18 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
                     ? callerNumberController.text
                     : widget.phoneNumber;
 
-                // Calculate total duration in seconds directly
                 int totalDurationSeconds = duration;
 
                 Map<String, dynamic> interaction = {
-                  'client_slug': selectedLead,
+                  'client_slug': null,
                   'name': name,
                   'caller_name': callerName,
                   'phone': callerNumber,
                   'interaction_date': interactionDateController.text,
                   'interaction_type': selectedCallType,
                   'interaction_tag': selectedCallTag,
-                  'status': selectedStatus,
-                  'duration_seconds': totalDurationSeconds, // Store duration in seconds
+                  'status': selectedLeadValue ?? 'not responding', // Store the selected lead value in the 'status' field
+                  'duration_seconds': totalDurationSeconds,
                 };
 
                 await DatabaseHelper.insertInteraction(interaction);
@@ -147,7 +170,6 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
                   selectedLead = 'not responding';
                   selectedCallType = 'incoming';
                   selectedCallTag = 'unanswered';
-                  selectedStatus = 'incoming';
                 });
 
                 ScaffoldMessenger.of(context).showSnackBar(
