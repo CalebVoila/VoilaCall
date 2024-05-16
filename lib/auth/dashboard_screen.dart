@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-
-import '../screens/call_log_screen.dart';
-import '../screens/dialpad_screen.dart';
-import '../screens/statistics_page.dart';
-import '../screens/voila_call_screen.dart';
-import 'login_screens.dart';
+import 'package:voila_call_dummy/auth/login_screen.dart';
+import 'package:voila_call_dummy/screens/call_log_screen.dart';
+import 'package:voila_call_dummy/screens/dialpad_screen.dart';
+import 'package:voila_call_dummy/screens/voila_call_screen.dart';
+import 'package:voila_call_dummy/screens/statistics_page.dart';
 
 class DashboardScreen extends StatelessWidget {
   final String username;
