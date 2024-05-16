@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:testing/auth/register%20screen.dart';
+import 'package:voila_call_dummy/auth/register%20screen.dart';
+
 
 import 'dashboard_screen.dart';
 

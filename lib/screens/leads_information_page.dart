@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:voila_call_dummy/widgets/database_helper.dart';
+
+import '../widgets/database_helper.dart';
 
 class LeadsInformationPage extends StatefulWidget {
   @override
@@ -7,25 +8,19 @@ class LeadsInformationPage extends StatefulWidget {
 }
 
 class _LeadsInformationPageState extends State<LeadsInformationPage> {
-  int _hotLeadsCount = 0;
-  int _coldLeadsCount = 0;
-  int _openLeadsCount = 0;
-  int _warmLeadsCount = 0;
+  Map<String, int> _leadCounts = {};
   int _totalInteractions = 0;
 
   @override
   void initState() {
     super.initState();
-    _fetchLeadsCount();
+    _fetchLeadCounts();
   }
 
-  Future<void> _fetchLeadsCount() async {
+  Future<void> _fetchLeadCounts() async {
     try {
       // Fetch lead counts for different types
-      _hotLeadsCount = await DatabaseHelper.getLeadCount('hot');
-      _coldLeadsCount = await DatabaseHelper.getLeadCount('cold');
-      _openLeadsCount = await DatabaseHelper.getLeadCount('open');
-      _warmLeadsCount = await DatabaseHelper.getLeadCount('warm');
+      _leadCounts = await DatabaseHelper.getLeadCounts();
 
       // Fetch total interactions count
       _totalInteractions = await DatabaseHelper.getTotalInteractionsCount();
@@ -35,7 +30,6 @@ class _LeadsInformationPageState extends State<LeadsInformationPage> {
     } catch (e) {
       print('Error fetching leads count: $e');
       // Handle errors here, set default values or show an error message
-      showErrorDialog(context, 'Error fetching leads count');
     }
   }
 
@@ -48,10 +42,11 @@ class _LeadsInformationPageState extends State<LeadsInformationPage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildLeadTile('Hot Leads', _hotLeadsCount),
-          _buildLeadTile('Cold Leads', _coldLeadsCount),
-          _buildLeadTile('Open Leads', _openLeadsCount),
-          _buildLeadTile('Warm Leads', _warmLeadsCount),
+          _buildLeadTile('Hot Leads', _leadCounts['hot_leads'] ?? 0),
+          _buildLeadTile('Open Leads', _leadCounts['open_leads'] ?? 0),
+          _buildLeadTile('Warm Leads', _leadCounts['warm_leads'] ?? 0),
+          _buildLeadTile('Customers', _leadCounts['customers'] ?? 0),
+          _buildLeadTile('Not Responding', _leadCounts['not_responding'] ?? 0),
           _buildLeadTile('Total Interactions', _totalInteractions),
         ],
       ),
@@ -61,27 +56,7 @@ class _LeadsInformationPageState extends State<LeadsInformationPage> {
   Widget _buildLeadTile(String title, int count) {
     return Padding(
       padding: EdgeInsets.all(16.0),
-      child: Text('$title: $count', style: TextStyle(fontSize: 18.0)),
-    );
-  }
-
-  void showErrorDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Error'),
-          content: Text(message),
-          actions: [
-            TextButton(
-              child: Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+      child: Text('$title: $count'),
     );
   }
 }

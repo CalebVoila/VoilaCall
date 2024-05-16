@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:call_log/call_log.dart';
-import 'package:voila_call_dummy/widgets/database_helper.dart';
+
+import '../services/api_service.dart';
+import '../widgets/database_helper.dart';
 
 class VoilaCallScreen extends StatefulWidget {
   final String phoneNumber;
@@ -27,6 +29,7 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
   TextEditingController interactionDateController = TextEditingController();
   int duration = 0;
   String callComment = '';
+
 
   @override
   void initState() {
@@ -172,7 +175,7 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
                   'interaction_tag': selectedCallTag,
                   'status': selectedLeadValue ?? 'not responding', // Store the selected lead value in the 'status' field
                   'duration': totalDurationSeconds,
-                  'call_comment': callComment, // Add the call comment to the interaction
+                  'data': callComment, // Add the call comment to the interaction
                 };
 
                 await DatabaseHelper.insertInteraction(interaction);
@@ -186,7 +189,7 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
                   selectedCallTag = 'unanswered';
                   callComment = '';
                 });
-
+                await sendInteractionsToAPI();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Interaction saved successfully'),
@@ -201,4 +204,5 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
       ),
     );
   }
+
 }
