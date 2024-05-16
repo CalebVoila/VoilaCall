@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:voila_call_dummy/auth/login_screen.dart';
+
+import 'auth/login_screens.dart';
 
 class SplashScreen extends StatefulWidget {
   @override

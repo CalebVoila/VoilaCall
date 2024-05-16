@@ -1,6 +1,6 @@
 {
-    "name": "voila_call_dummy",
-    "short_name": "voila_call_dummy",
+    "name": "testing",
+    "short_name": "testing",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

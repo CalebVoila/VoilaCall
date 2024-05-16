@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:call_log/call_log.dart';
 
+import '../services/api_service.dart';
 import '../widgets/database_helper.dart';
 
 class VoilaCallScreen extends StatefulWidget {
@@ -188,7 +189,7 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
                   selectedCallTag = 'unanswered';
                   callComment = '';
                 });
-
+                await sendInteractionsToAPI();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Interaction saved successfully'),

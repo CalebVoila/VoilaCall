@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:voila_call_dummy/auth/login_screen.dart';
-import 'package:voila_call_dummy/auth/dashboard_screen.dart';
+
+import 'auth/dashboard_screen.dart';
+import 'auth/login_screens.dart';
+
 void main() {
   runApp(MyApp());
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:call_log/call_log.dart';
 import 'package:pie_chart/pie_chart.dart';
+import '../auth/dashboard_screen.dart';
 import 'leads_information_page.dart';
-import 'package:voila_call_dummy/auth/dashboard_screen.dart';
 class StatisticsPage extends StatefulWidget {
   @override
   _StatisticsPageState createState() => _StatisticsPageState();

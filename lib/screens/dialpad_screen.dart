@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:call_log/call_log.dart';
-import 'package:voila_call_dummy/widgets/custom_dialpad.dart';
-import 'package:voila_call_dummy/screens/voila_call_screen.dart';
-import 'package:voila_call_dummy/screens/contact_details_screen.dart';
-import 'package:voila_call_dummy/auth/dashboard_screen.dart';
-import 'package:voila_call_dummy/services/call_service.dart'; // Assuming this service includes call-related functionalities
+import 'package:testing/screens/voila_call_screen.dart';
+
+import '../auth/dashboard_screen.dart';
+import '../services/call_service.dart';
+import '../widgets/custom_dialpad.dart';
+import 'contact_details_screen.dart';
 
 class DialpadScreen extends StatefulWidget {
   final Function(int) setActiveTabIndex;

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:call_log/call_log.dart';
+
 
 class DatabaseHelper {
   static Database? _database;
@@ -25,35 +25,38 @@ class DatabaseHelper {
       onCreate: (db, version) async {
         await db.execute(
           '''CREATE TABLE $interactionsTableName (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_slug TEXT,
-            name TEXT,
-            phone TEXT,
-            interaction_date TEXT,
-            interaction_type TEXT,
-            interaction_tag TEXT,
-            status TEXT,
-            duration_seconds INTEGER,
-            caller_name TEXT,
-            created_at TEXT,
-            updated_at TEXT,
-            call_comment TEXT
-          )''',
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_slug TEXT,
+        name TEXT,
+        phone TEXT,
+        interaction_date TEXT,
+        interaction_type TEXT,
+        interaction_tag TEXT,
+        status TEXT,
+        duration INTEGER,
+        caller_name TEXT,
+        created_at TEXT,
+        updated_at TEXT,
+        data TEXT
+      )''',
         );
 
         await db.execute(
           '''CREATE TABLE $leadsTableName (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            lead_type TEXT
-          )''',
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        lead_type TEXT
+      )''',
         );
       },
       version: 1,
     );
   }
 
+
+
+
   static Future<void> insertInteraction(Map<String, dynamic> interaction) async {
-    final int seconds = interaction['duration_seconds'] ?? 0;
+    final int seconds = interaction['duration'] ?? 0;
 
     final Map<String, dynamic> interactionWithSeconds = {
       'client_slug': interaction['client_slug'],
@@ -63,7 +66,7 @@ class DatabaseHelper {
       'interaction_type': interaction['interaction_type'],
       'interaction_tag': interaction['interaction_tag'],
       'status': interaction['status'],
-      'duration_seconds': seconds,
+      'duration': seconds,
       'caller_name': interaction['caller_name'],
       'created_at': DateTime.now().toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
@@ -74,6 +77,14 @@ class DatabaseHelper {
     await db.insert(interactionsTableName, interactionWithSeconds);
   }
 
+  static Future<int> getLeadCount(String leadType) async {
+    final Database db = await database;
+    final List<Map<String, dynamic>> result = await db.rawQuery(
+      '''SELECT COUNT(*) as count FROM $leadsTableName WHERE lead_type = ?''',
+      [leadType],
+    );
+    return result.isNotEmpty ? result.first['count'] as int : 0;
+  }
   static Future<Map<String, int>> getLeadCounts() async {
     final Database db = await database;
     final List<Map<String, dynamic>> result = await db.rawQuery(
@@ -100,14 +111,6 @@ class DatabaseHelper {
       return {};
     }
   }
-
-  static Future<int> getTotalInteractionsCount() async {
-    final Database db = await database;
-    final List<Map<String, dynamic>> result = await db.rawQuery(
-      '''SELECT COUNT(*) as count FROM $interactionsTableName''',
-    );
-    return result.isNotEmpty ? result.first['count'] as int : 0;
-  }
   static Future<String> getCallComment(int interactionId) async {
     final Database db = await database;
     final List<Map<String, dynamic>> result = await db.query(
@@ -118,7 +121,6 @@ class DatabaseHelper {
 
     return result.isNotEmpty ? result.first['data'] as String : '';
   }
-
   static Future<void> updateCallComment(int interactionId, String comment) async {
     final Database db = await database;
     await db.update(
@@ -129,8 +131,17 @@ class DatabaseHelper {
     );
   }
 
+  static Future<int> getTotalInteractionsCount() async {
+    final Database db = await database;
+    final List<Map<String, dynamic>> result = await db.rawQuery(
+      '''SELECT COUNT(*) as count FROM $interactionsTableName''',
+    );
+    return result.isNotEmpty ? result.first['count'] as int : 0;
+  }
 
-  static fetchCallerInfoFromAPI(String phoneNumber) {}
+  static fetchCallerInfoFromAPI(String phoneNumber) {
+
+  }
 }
 
 class LeadsInformationPage extends StatefulWidget {
@@ -146,9 +157,7 @@ class _LeadsInformationPageState extends State<LeadsInformationPage> {
   int _customersCount = 0;
   int _notRespondingCount = 0;
   int _totalInteractions = 0;
-
-  String _callComment = '';
-
+  String _callComment = ''; //
   @override
   void initState() {
     super.initState();
@@ -163,9 +172,9 @@ class _LeadsInformationPageState extends State<LeadsInformationPage> {
       _warmLeadsCount = leadCounts['warm_leads'] ?? 0;
       _customersCount = leadCounts['customers'] ?? 0;
       _notRespondingCount = leadCounts['not_responding'] ?? 0;
+      _callComment = await DatabaseHelper.getCallComment(1); // Replace 1 with the actual interaction ID
 
       _totalInteractions = await DatabaseHelper.getTotalInteractionsCount();
-      _callComment = await DatabaseHelper.getCallComment(1); // Replace 1 with the actual interaction ID
       setState(() {});
     } catch (e) {
       print('Error fetching leads count: $e');
@@ -222,14 +231,16 @@ class _LeadsInformationPageState extends State<LeadsInformationPage> {
           SizedBox(height: 8.0),
           Text('Current comment: $_callComment'),
           ElevatedButton(
-            onPressed: () {
-              DatabaseHelper.updateCallComment(1, _callComment); // Replace 1 with the actual interaction ID
+            onPressed: () async {
+              await DatabaseHelper.updateCallComment(1, _callComment); // Replace 1 with the actual interaction ID
+              setState(() {}); // Update the UI after saving the comment
             },
             child: Text('Save Comment'),
           ),
         ],
       ),
     );
-  }
+
+}
 }
 
