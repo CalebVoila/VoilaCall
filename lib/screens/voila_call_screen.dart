@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:call_log/call_log.dart';
-import 'package:voila_call_dummy/widgets/database_helper.dart';
+
+import '../widgets/database_helper.dart';
 
 class VoilaCallScreen extends StatefulWidget {
   final String phoneNumber;
@@ -26,6 +27,8 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
   TextEditingController callerNumberController = TextEditingController();
   TextEditingController interactionDateController = TextEditingController();
   int duration = 0;
+  String callComment = '';
+
 
   @override
   void initState() {
@@ -139,6 +142,18 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
               ],
             ),
             SizedBox(height: 20),
+            TextField(
+              onChanged: (value) {
+                setState(() {
+                  callComment = value;
+                });
+              },
+              decoration: InputDecoration(
+                labelText: 'Call Comment',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
                 String name = nameController.text;
@@ -158,7 +173,8 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
                   'interaction_type': selectedCallType,
                   'interaction_tag': selectedCallTag,
                   'status': selectedLeadValue ?? 'not responding', // Store the selected lead value in the 'status' field
-                  'duration_seconds': totalDurationSeconds,
+                  'duration': totalDurationSeconds,
+                  'data': callComment, // Add the call comment to the interaction
                 };
 
                 await DatabaseHelper.insertInteraction(interaction);
@@ -170,6 +186,7 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
                   selectedLead = 'not responding';
                   selectedCallType = 'incoming';
                   selectedCallTag = 'unanswered';
+                  callComment = '';
                 });
 
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -186,4 +203,5 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
       ),
     );
   }
+
 }

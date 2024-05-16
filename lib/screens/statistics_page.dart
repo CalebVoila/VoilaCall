@@ -84,56 +84,56 @@ class _StatisticsPageState extends State<StatisticsPage> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-        onWillPop: () async {
-      // Navigate to the DashboardScreen when back button is pressed
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => DashboardScreen(username: '')),
-      );
-      return false; // Return false to prevent default back button behavior
-    },
+      onWillPop: () async {
+        // Navigate to the DashboardScreen when back button is pressed
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => DashboardScreen(username: '')),
+        );
+        return false; // Return false to prevent default back button behavior
+      },
 
       child: DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('Statistics'),
-          automaticallyImplyLeading: false,
-          bottom: TabBar(
-            tabs: [
-              Tab(text: 'Connected Calls'),
-              Tab(text: 'Incoming/Outgoing Calls'),
-              Tab(text: 'View Leads Information'), // Added "View Leads Information" tab
+        length: 3,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text('Statistics'),
+            automaticallyImplyLeading: false,
+            bottom: TabBar(
+              tabs: [
+                Tab(text: 'Connected Calls'),
+                Tab(text: 'Incoming/Outgoing Calls'),
+                Tab(text: 'View Leads Information'), // Added "View Leads Information" tab
+              ],
+            ),
+            actions: [
+              DropdownButton<String>(
+                value: _selectedFilter,
+                items: _filterOptions.map((String option) {
+                  return DropdownMenuItem<String>(
+                    value: option,
+                    child: Text(option),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _selectedFilter = newValue;
+                    });
+                    _fetchCallLogs();
+                  }
+                },
+              ),
             ],
           ),
-          actions: [
-            DropdownButton<String>(
-              value: _selectedFilter,
-              items: _filterOptions.map((String option) {
-                return DropdownMenuItem<String>(
-                  value: option,
-                  child: Text(option),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                if (newValue != null) {
-                  setState(() {
-                    _selectedFilter = newValue;
-                  });
-                  _fetchCallLogs();
-                }
-              },
-            ),
-          ],
+          body: TabBarView(
+            children: [
+              _buildConnectedCallsTab(),
+              _buildInOutCallsTab(),
+              LeadsInformationPage(), // Directly add LeadsInformationPage
+            ],
+          ),
         ),
-        body: TabBarView(
-          children: [
-            _buildConnectedCallsTab(),
-            _buildInOutCallsTab(),
-            LeadsInformationPage(), // Directly add LeadsInformationPage
-          ],
-        ),
-      ),
       ),
     );
   }
@@ -234,19 +234,19 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   Widget _buildCommonStatistics() {
     return SingleChildScrollView(
-        child: Padding(
+      child: Padding(
         padding: EdgeInsets.all(16.0),
-    child: Column(          crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(height: 10),
-        _buildStatisticTile(Icons.phone, 'Total Dialed Calls', _totalDialedCalls),
-        _buildStatisticTile(Icons.av_timer, 'Average Talk Time', _averageTalkTime),
-        _buildStatisticTile(Icons.check_circle, 'Connected Calls', _totalConnectedCalls),
-        _buildStatisticTile(Icons.cancel, 'Not Connected Calls', _totalNotConnectedCalls),
-        _buildStatisticTile(Icons.timer, 'Total Talk Time', _totalTalkTime),
-      ],
-    ),
+        child: Column(          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(height: 10),
+            _buildStatisticTile(Icons.phone, 'Total Dialed Calls', _totalDialedCalls),
+            _buildStatisticTile(Icons.av_timer, 'Average Talk Time', _averageTalkTime),
+            _buildStatisticTile(Icons.check_circle, 'Connected Calls', _totalConnectedCalls),
+            _buildStatisticTile(Icons.cancel, 'Not Connected Calls', _totalNotConnectedCalls),
+            _buildStatisticTile(Icons.timer, 'Total Talk Time', _totalTalkTime),
+          ],
         ),
+      ),
     );
   }
 
@@ -373,4 +373,3 @@ class _CustomDateRangePickerDialogState
     return value < 10 ? '0$value' : '$value';
   }
 }
-

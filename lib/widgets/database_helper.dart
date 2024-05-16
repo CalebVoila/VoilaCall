@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:call_log/call_log.dart';
 
 class DatabaseHelper {
   static Database? _database;
@@ -35,7 +36,8 @@ class DatabaseHelper {
             duration_seconds INTEGER,
             caller_name TEXT,
             created_at TEXT,
-            updated_at TEXT
+            updated_at TEXT,
+            call_comment TEXT
           )''',
         );
 
@@ -65,19 +67,38 @@ class DatabaseHelper {
       'caller_name': interaction['caller_name'],
       'created_at': DateTime.now().toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
+      'data': interaction['data'] ?? '',
     };
 
     final Database db = await database;
     await db.insert(interactionsTableName, interactionWithSeconds);
   }
 
-  static Future<int> getLeadCount(String leadType) async {
+  static Future<Map<String, int>> getLeadCounts() async {
     final Database db = await database;
     final List<Map<String, dynamic>> result = await db.rawQuery(
-      '''SELECT COUNT(*) as count FROM $leadsTableName WHERE lead_type = ?''',
-      [leadType],
+      '''
+      SELECT 
+        SUM(CASE WHEN status = 'hot lead' THEN 1 ELSE 0 END) AS hot_leads,
+        SUM(CASE WHEN status = 'open lead' THEN 1 ELSE 0 END) AS open_leads,
+        SUM(CASE WHEN status = 'warm lead' THEN 1 ELSE 0 END) AS warm_leads,
+        SUM(CASE WHEN status = 'customer' THEN 1 ELSE 0 END) AS customers,
+        SUM(CASE WHEN status = 'not responding' THEN 1 ELSE 0 END) AS not_responding
+      FROM $interactionsTableName
+      ''',
     );
-    return result.isNotEmpty ? result.first['count'] as int : 0;
+
+    if (result.isNotEmpty) {
+      return {
+        'hot_leads': result.first['hot_leads'] as int,
+        'open_leads': result.first['open_leads'] as int,
+        'warm_leads': result.first['warm_leads'] as int,
+        'customers': result.first['customers'] as int,
+        'not_responding': result.first['not_responding'] as int,
+      };
+    } else {
+      return {};
+    }
   }
 
   static Future<int> getTotalInteractionsCount() async {
@@ -87,6 +108,27 @@ class DatabaseHelper {
     );
     return result.isNotEmpty ? result.first['count'] as int : 0;
   }
+  static Future<String> getCallComment(int interactionId) async {
+    final Database db = await database;
+    final List<Map<String, dynamic>> result = await db.query(
+      interactionsTableName,
+      where: 'id = ?',
+      whereArgs: [interactionId],
+    );
+
+    return result.isNotEmpty ? result.first['data'] as String : '';
+  }
+
+  static Future<void> updateCallComment(int interactionId, String comment) async {
+    final Database db = await database;
+    await db.update(
+      interactionsTableName,
+      {'data': comment},
+      where: 'id = ?',
+      whereArgs: [interactionId],
+    );
+  }
+
 
   static fetchCallerInfoFromAPI(String phoneNumber) {}
 }
@@ -101,21 +143,29 @@ class _LeadsInformationPageState extends State<LeadsInformationPage> {
   int _coldLeadsCount = 0;
   int _openLeadsCount = 0;
   int _warmLeadsCount = 0;
+  int _customersCount = 0;
+  int _notRespondingCount = 0;
   int _totalInteractions = 0;
+
+  String _callComment = '';
 
   @override
   void initState() {
     super.initState();
-    _fetchLeadsCount();
+    _fetchLeadCounts();
   }
 
-  Future<void> _fetchLeadsCount() async {
+  Future<void> _fetchLeadCounts() async {
     try {
-      _hotLeadsCount = await DatabaseHelper.getLeadCount('hot');
-      _coldLeadsCount = await DatabaseHelper.getLeadCount('cold');
-      _openLeadsCount = await DatabaseHelper.getLeadCount('open');
-      _warmLeadsCount = await DatabaseHelper.getLeadCount('warm');
+      final leadCounts = await DatabaseHelper.getLeadCounts();
+      _hotLeadsCount = leadCounts['hot_leads'] ?? 0;
+      _openLeadsCount = leadCounts['open_leads'] ?? 0;
+      _warmLeadsCount = leadCounts['warm_leads'] ?? 0;
+      _customersCount = leadCounts['customers'] ?? 0;
+      _notRespondingCount = leadCounts['not_responding'] ?? 0;
+
       _totalInteractions = await DatabaseHelper.getTotalInteractionsCount();
+      _callComment = await DatabaseHelper.getCallComment(1); // Replace 1 with the actual interaction ID
       setState(() {});
     } catch (e) {
       print('Error fetching leads count: $e');
@@ -133,10 +183,12 @@ class _LeadsInformationPageState extends State<LeadsInformationPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildLeadTile('Hot Leads', _hotLeadsCount),
-          _buildLeadTile('Cold Leads', _coldLeadsCount),
           _buildLeadTile('Open Leads', _openLeadsCount),
           _buildLeadTile('Warm Leads', _warmLeadsCount),
+          _buildLeadTile('Customers', _customersCount),
+          _buildLeadTile('Not Responding', _notRespondingCount),
           _buildLeadTile('Total Interactions', _totalInteractions),
+          _buildCallCommentWidget(),
         ],
       ),
     );
@@ -148,4 +200,36 @@ class _LeadsInformationPageState extends State<LeadsInformationPage> {
       child: Text('$title: $count'),
     );
   }
+  Widget _buildCallCommentWidget() {
+    return Padding(
+      padding: EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Call Comment:'),
+          SizedBox(height: 8.0),
+          TextField(
+            onChanged: (value) {
+              setState(() {
+                _callComment = value;
+              });
+            },
+            decoration: InputDecoration(
+              hintText: 'Enter call comment',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          SizedBox(height: 8.0),
+          Text('Current comment: $_callComment'),
+          ElevatedButton(
+            onPressed: () {
+              DatabaseHelper.updateCallComment(1, _callComment); // Replace 1 with the actual interaction ID
+            },
+            child: Text('Save Comment'),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
