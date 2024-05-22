@@ -59,15 +59,15 @@ class DatabaseHelper {
     final int seconds = interaction['duration'] ?? 0;
 
     final Map<String, dynamic> interactionWithSeconds = {
-      'client_slug': interaction['client_slug'],
-      'name': interaction['name'],
-      'phone': interaction['phone'],
-      'interaction_date': interaction['interaction_date'],
-      'interaction_type': interaction['interaction_type'],
-      'interaction_tag': interaction['interaction_tag'],
-      'status': interaction['status'],
+      'client_slug': interaction['client_slug'] ?? '',
+      'name': interaction['name'] ?? '',
+      'phone': interaction['phone'] ?? '',
+      'interaction_date': interaction['interaction_date'] ?? '',
+      'interaction_type': interaction['interaction_type'] ?? '',
+      'interaction_tag': interaction['interaction_tag'] ?? '',
+      'status': interaction['status'] ?? '',
       'duration': seconds,
-      'caller_name': interaction['caller_name'],
+      'caller_name': interaction['caller_name'] ?? '',
       'created_at': DateTime.now().toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
       'data': interaction['data'] ?? '',
@@ -76,6 +76,7 @@ class DatabaseHelper {
     final Database db = await database;
     await db.insert(interactionsTableName, interactionWithSeconds);
   }
+
 
   static Future<int> getLeadCount(String leadType) async {
     final Database db = await database;

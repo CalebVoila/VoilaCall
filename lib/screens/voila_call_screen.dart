@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:call_log/call_log.dart';
-
-import '../services/api_service.dart';
 import '../widgets/database_helper.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class VoilaCallScreen extends StatefulWidget {
   final String phoneNumber;
+  final int callDuration;
 
   VoilaCallScreen({
     required this.phoneNumber,
-    required int callDuration,
+    required this.callDuration,
   });
 
   @override
@@ -23,13 +24,14 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
   String selectedCallTag = 'unanswered';
   List<String> callLeads = ['not responding', 'open lead', 'cold lead', 'hot lead', 'warm lead', 'customer'];
   String? selectedLeadValue;
+  TextEditingController clientSlugController = TextEditingController();
   TextEditingController nameController = TextEditingController();
   TextEditingController callerNameController = TextEditingController();
   TextEditingController callerNumberController = TextEditingController();
   TextEditingController interactionDateController = TextEditingController();
+  TextEditingController dataController = TextEditingController();
   int duration = 0;
   String callComment = '';
-
 
   @override
   void initState() {
@@ -41,8 +43,7 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
 
   void setInteractionDate() {
     DateTime now = DateTime.now();
-    String formattedDate =
-        "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    String formattedDate = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
     interactionDateController.text = formattedDate;
   }
 
@@ -88,6 +89,30 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
     }
   }
 
+  Future<void> sendInteractionToAPI(Map<String, dynamic> interaction) async {
+    final url = Uri.parse('https://api.voilacode.com/api/interaction');
+    final client = http.Client();
+
+    try {
+      final response = await client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(interaction),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('Interaction posted successfully');
+      } else {
+        print('Failed to post interaction. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+      }
+    } catch (e) {
+      print('Error posting interaction: $e');
+    } finally {
+      client.close();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,6 +124,11 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            TextField(
+              controller: clientSlugController,
+              decoration: InputDecoration(labelText: 'Client Slug'),
+            ),
+            SizedBox(height: 20),
             TextField(
               controller: nameController,
               decoration: InputDecoration(labelText: 'Name'),
@@ -121,6 +151,23 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
             TextField(
               controller: TextEditingController(text: '$duration seconds'),
               decoration: InputDecoration(labelText: 'Call Duration'),
+              readOnly: true,
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: interactionDateController,
+              decoration: InputDecoration(labelText: 'Interaction Date'),
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: TextEditingController(text: selectedCallType),
+              decoration: InputDecoration(labelText: 'Interaction Type'),
+              readOnly: true,
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: TextEditingController(text: selectedCallTag),
+              decoration: InputDecoration(labelText: 'Interaction Tag'),
               readOnly: true,
             ),
             SizedBox(height: 20),
@@ -157,39 +204,54 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
+                String clientSlug = clientSlugController.text;
                 String name = nameController.text;
                 String callerName = callerNameController.text;
-                String callerNumber = callerNumberController.text.isNotEmpty
-                    ? callerNumberController.text
-                    : widget.phoneNumber;
-
-                int totalDurationSeconds = duration;
+                String callerNumber = callerNumberController.text.isNotEmpty ? callerNumberController.text : widget.phoneNumber;
+                String totalDurationSeconds = duration.toString();  // Convert duration to string for API
 
                 Map<String, dynamic> interaction = {
-                  'client_slug': null,
+                  'client_slug': clientSlug.isNotEmpty ? clientSlug : null,
                   'name': name,
                   'caller_name': callerName,
+                  'caller_phone': callerNumber,
                   'phone': callerNumber,
                   'interaction_date': interactionDateController.text,
                   'interaction_type': selectedCallType,
                   'interaction_tag': selectedCallTag,
-                  'status': selectedLeadValue ?? 'not responding', // Store the selected lead value in the 'status' field
-                  'duration': totalDurationSeconds,
-                  'data': callComment, // Add the call comment to the interaction
+                  'status': selectedLeadValue ?? 'not responding',
+                  'duration': duration,  // Keep duration as int for database
+                  'data': callComment,
                 };
 
+                if (name.isEmpty || callerName.isEmpty || callerNumber.isEmpty || interactionDateController.text.isEmpty || selectedCallType.isEmpty || selectedCallTag.isEmpty || selectedLeadValue == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Please fill all the required fields'),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                  return;
+                }
+
                 await DatabaseHelper.insertInteraction(interaction);
+
+                interaction['duration'] = totalDurationSeconds;  // Convert duration to string for API
 
                 nameController.clear();
                 callerNameController.clear();
                 callerNumberController.clear();
+                clientSlugController.clear();
+                interactionDateController.clear();
+                dataController.clear();
                 setState(() {
-                  selectedLead = 'not responding';
+                  selectedLeadValue = 'not responding';
                   selectedCallType = 'incoming';
                   selectedCallTag = 'unanswered';
+                  duration = 0;
                   callComment = '';
                 });
-                await sendInteractionsToAPI();
+                await sendInteractionToAPI(interaction);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Interaction saved successfully'),
@@ -204,5 +266,4 @@ class _VoilaCallScreenState extends State<VoilaCallScreen> {
       ),
     );
   }
-
 }

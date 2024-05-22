@@ -25,7 +25,9 @@ class _ContactDetailsScreenState extends State<ContactDetailsScreen> {
   }
 
   Future<void> _fetchCallLogEntries() async {
-    Iterable<CallLogEntry> callLogs = await CallLog.get();
+    Iterable<CallLogEntry> callLogs = await CallLog.query(
+      number: widget.call.number,
+    );
     setState(() {
       callLogEntries = callLogs.toList();
     });
@@ -59,7 +61,9 @@ class _ContactDetailsScreenState extends State<ContactDetailsScreen> {
     setState(() {
       callLogEntries = callLogEntries.where((callLog) {
         final DateTime callDateTime = DateTime.fromMillisecondsSinceEpoch(callLog.timestamp ?? 0);
-        return callDateTime.isAfter(startDate.subtract(Duration(days: 1))) && callDateTime.isBefore(endDate.add(Duration(days: 1)));
+        return callDateTime.isAfter(startDate.subtract(Duration(days: 1))) &&
+            callDateTime.isBefore(endDate.add(Duration(days: 1))) &&
+            callLog.number == widget.call.number;
       }).toList();
     });
   }
@@ -68,7 +72,7 @@ class _ContactDetailsScreenState extends State<ContactDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.call.name ?? 'Unknown',style: TextStyle(color: Colors.white),),
+        title: Text(widget.call.name ?? 'Unknown', style: TextStyle(color: Colors.white)),
         backgroundColor: Color(0xFF5E17EB),
         actions: [
           IconButton(
@@ -88,7 +92,7 @@ class _ContactDetailsScreenState extends State<ContactDetailsScreen> {
         onPressed: () {
           _makeCall(widget.call.number ?? '');
         },
-        child: Icon(Icons.call,color:Color(0xB80EF626)),
+        child: Icon(Icons.call, color: Color(0xB80EF626)),
         backgroundColor: Color(0xC5106EEA),
       ),
     );

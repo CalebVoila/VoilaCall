@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:voila_call_dummy/auth/login_screen.dart';
 import 'package:voila_call_dummy/screens/call_log_screen.dart';
 import 'package:voila_call_dummy/screens/dialpad_screen.dart';
@@ -10,8 +11,12 @@ class DashboardScreen extends StatelessWidget {
 
   DashboardScreen({required this.username});
 
-  void _logout(BuildContext context) {
-    Navigator.of(context).pushReplacement(
+  Future<void> _logout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+
+    Navigator.pushReplacement(
+      context,
       MaterialPageRoute(builder: (context) => LoginScreen()),
     );
   }

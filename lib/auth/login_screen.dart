@@ -14,6 +14,23 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
 
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => DashboardScreen(username: 'User')), // Replace with actual username if available
+      );
+    }
+  }
+
   Future<void> _login(BuildContext context) async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
@@ -32,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
         var responseData = jsonDecode(response.body);
         String token = responseData['token'];
 
-        // Save token to secure storage (SharedPreferences)
+        // Save token to SharedPreferences
         await saveToken(token);
 
         // Navigate to dashboard screen
@@ -43,52 +60,36 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
       } else {
-        // Handle unsuccessful login
-        print('Login failed: ${response.statusCode}');
-        print('Response body: ${response.body}');
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('Error'),
-              content: Text('Invalid email or password.'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text('OK'),
-                ),
-              ],
-            );
-          },
-        );
+        _showErrorDialog(context, 'Invalid email or password.');
       }
     } catch (e) {
-      print('Error: $e');
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Error'),
-            content: Text('An error occurred while logging in.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text('OK'),
-              ),
-            ],
-          );
-        },
-      );
+      _showErrorDialog(context, 'An error occurred while logging in.');
     }
   }
 
   Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('token', token);
+  }
+
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
